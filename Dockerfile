@@ -8,11 +8,11 @@ WORKDIR /app
 
 # 1. Copy package files and install dependencies
 # Note: Changed to 'sentinal-backend' to match your folder spelling
-COPY sentinal-backend/package*.json ./
+COPY sentinel-backend/package*.json ./
 RUN npm install
 
 # 2. Copy the rest of your backend source files
-COPY sentinal-backend/ .
+COPY sentinel-backend/ .
 
 # 3. Find and compile SentinelCore.java wherever it is hidden
 # This command automatically finds the file inside your directories and compiles it safely
