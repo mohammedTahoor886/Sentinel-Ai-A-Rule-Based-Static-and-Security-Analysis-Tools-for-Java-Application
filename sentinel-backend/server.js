@@ -5,7 +5,9 @@ const fs = require('fs');
 const upload = require('./uploadMiddleware');
 
 const app = express();
-app.use(cors());
+    app.use(cors({
+        origin: 'https://sentinel-ui-ezyv.onrender.com/'    
+}));
 app.use(express.json());
 
 
