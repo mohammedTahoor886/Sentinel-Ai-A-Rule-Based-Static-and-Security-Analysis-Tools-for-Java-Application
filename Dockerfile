@@ -12,7 +12,7 @@ RUN npm install
 
 COPY sentinal-backend/ .
 
-RUN javac SentinalCore.java
+RUN javac SentinelCore.java
 
 EXPOSE 5000
 CMD ["node", "server.js"]
