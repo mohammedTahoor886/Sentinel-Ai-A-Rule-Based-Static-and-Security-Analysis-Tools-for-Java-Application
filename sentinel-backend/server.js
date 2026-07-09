@@ -5,9 +5,13 @@ const fs = require('fs');
 const upload = require('./uploadMiddleware');
 
 const app = express();
-    app.use(cors({
-        origin: 'https://sentinel-ui-ezyv.onrender.com/'    
-}));
+app.use(cors(
+    {
+    origin:['https://sentinel-ui-ezyv.onrender.com',
+        'http://localhost:5173',                 // For Vite local frontend
+        'http://localhost:3000']
+    }
+));
 app.use(express.json());
 
 

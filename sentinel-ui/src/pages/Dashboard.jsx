@@ -3,6 +3,12 @@ import StatCards from '../components/StatCards';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Dynamic API URL environment checker
+const API_URL = window.location.hostname === "localhost"
+    ? "http://localhost:5000" // Matches your backend app.js port
+    : "https://sentinel-ai-a-rule-based-static-and.onrender.com"; // 👈 PASTE YOUR LIVE RENDER BACKEND URL HERE
+
+// PDF Report Generator Function
 const generateAuditReport = (results) => {
     const doc = new jsPDF();
 
@@ -19,10 +25,10 @@ const generateAuditReport = (results) => {
 
     const tableColumn = ["ID", "TYPE", "SEVERITY", "FILE:LINE"];
     const tableRows = results.map(v => [
-        v.id,
+        v.id || "N/A",
         v.type,
         v.severity,
-        `${v.file}:${v.line}`
+        `${v.file || 'unknown'}:${v.line}`
     ]);
 
     autoTable(doc, {
@@ -36,12 +42,14 @@ const generateAuditReport = (results) => {
     doc.save(`Sentinel_Audit_Report_${Date.now()}.pdf`);
 };
 
+// Main Dashboard Component
 const Dashboard = ({results, setResults, isScanning, setIsScanning, rawCode, setRawCode}) => {
 
     const handleScan = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Read file contents locally for the code viewer panel
         const reader = new FileReader();
         reader.onload = (ev) => setRawCode(ev.target.result);
         reader.readAsText(file);
@@ -51,9 +59,10 @@ const Dashboard = ({results, setResults, isScanning, setIsScanning, rawCode, set
         formData.append('file', file);
 
         try {
-            const response = await fetch('http://localhost:5000/upload-and-scan', {
+            // Updated to fetch from live Render or Localhost dynamically
+            const response = await fetch(`${API_URL}/upload-and-scan`, {
                 method: 'POST',
-                body: formData,
+                body: formData, // When using FormData, do NOT set Content-Type header manually
             });
             const data = await response.json();
             setResults(data.results || []);
@@ -66,7 +75,7 @@ const Dashboard = ({results, setResults, isScanning, setIsScanning, rawCode, set
 
     return (
         <>
-            
+            {/* Loading Overlay */}
             {isScanning && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center">
                     <div className="relative">
@@ -87,7 +96,7 @@ const Dashboard = ({results, setResults, isScanning, setIsScanning, rawCode, set
                 </div>
             )}
 
-
+            {/* Dashboard Container */}
             <div className="space-y-6">
                 <div className="flex justify-between items-center bg-slate-800/40 p-6 rounded-lg border border-slate-700">
                     <div>
@@ -112,9 +121,12 @@ const Dashboard = ({results, setResults, isScanning, setIsScanning, rawCode, set
                     </div>
                 </div>
 
+                {/* Stat Cards component */}
                 <StatCards scanResults={results} />
 
+                {/* Main Panel Grid */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {/* Left Panel: Source Code Viewer */}
                     <div className="bg-slate-950 rounded border border-slate-800 overflow-hidden">
                         <div className="p-2 bg-slate-900 text-[10px] font-mono text-slate-500 flex justify-between">
                             <span>SOURCE_STREAM</span>
@@ -130,6 +142,7 @@ const Dashboard = ({results, setResults, isScanning, setIsScanning, rawCode, set
                         </pre>
                     </div>
 
+                    {/* Right Panel: Vulnerabilities Table */}
                     <div className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden">
                         <table className="w-full text-left text-xs font-mono">
                             <thead className="bg-slate-900 text-slate-500 uppercase">
@@ -160,25 +173,24 @@ const Dashboard = ({results, setResults, isScanning, setIsScanning, rawCode, set
                         </table>
                     </div>
                 </div>
+
+                {/* Bottom Panel: System Logs */}
+                <div className="mt-8 bg-slate-950 rounded border border-slate-800 p-4 font-mono text-[10px]">
+                    <h4 className="text-slate-500 mb-2 uppercase tracking-widest text-[9px]">System_Logs</h4>
+                    <div className="space-y-1">
+                        <p className="text-blue-500">[INFO] Handshaking with V8_BULLSEYE_JDK container...</p>
+                        <p className="text-green-500">[SUCCESS] Connection established via Express Gateway.</p>
+                        {results.length > 0 ? (
+                            <>
+                                <p className="text-slate-400">[PROCESS] Analysis complete. {results.length} sinks identified.</p>
+                                <p className="text-red-500 animate-pulse font-bold">[ALERT] Taint detected in data flow.</p>
+                            </>
+                        ) : (
+                            <p className="text-slate-600 italic">[IDLE] Awaiting buffer input...</p>
+                        )}
+                    </div>
+                </div>
             </div>
-
-    {/* ADD THE SYSTEM LOGS HERE */}
-    <div className="mt-8 bg-slate-950 rounded border border-slate-800 p-4 font-mono text-[10px]">
-        <h4 className="text-slate-500 mb-2 uppercase tracking-widest text-[9px]">System_Logs</h4>
-        <div className="space-y-1">
-            <p className="text-blue-500">[INFO] Handshaking with V8_BULLSEYE_JDK container...</p>
-            <p className="text-green-500">[SUCCESS] Connection established via Express Gateway.</p>
-            {results.length > 0 ? (
-                <>
-                    <p className="text-slate-400">[PROCESS] Analysis complete. {results.length} sinks identified.</p>
-                    <p className="text-red-500 animate-pulse font-bold">[ALERT] Taint detected in data flow at offset line 7.</p>
-                </>
-            ) : (
-                <p className="text-slate-600 italic">[IDLE] Awaiting buffer input...</p>
-            )}
-        </div>
-    </div>
-
         </>
     );
 };
